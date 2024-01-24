@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "40291048872",
+    "project_id": "messenger-9207f",
+    "storage_bucket": "messenger-9207f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:40291048872:android:de051915fd4d224bc4919d",
+        "android_client_info": {
+          "package_name": "com.kattansoftware.messenger_test"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQRiUHpi1U4l9qB97ry3GDXhPVgTMfChI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
