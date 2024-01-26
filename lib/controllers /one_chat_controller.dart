@@ -49,13 +49,13 @@ class OneChatController extends ChangeNotifier {
 
         final data1 = snapshot.data!.data();
         UserModel newUser = UserModel.fromMap(data1 as Map<String, dynamic>);
-
+        isOnLine = newUser.userOnLine ?? false;
         return CustomTxt(
             newUser.userOnLine ?? false
                 ? usrOnline
                 : _formatDate(newUser.userLastSeen!),
             fSzie: 12,
-            color: Colors.grey);
+            color: const Color.fromARGB(255, 107, 105, 105));
       },
     );
   }
@@ -66,51 +66,42 @@ class OneChatController extends ChangeNotifier {
     required String receiverIdR,
     required String reciverNameR,
   }) async {
+    OneChatModel oneChatModel = OneChatModel(msg: newMsg, readed: isOnLine);
     await firestore
-        .collection(usersTable)
-        .doc(receiverIdR)
-        .get()
+        .collection(messagesTable)
+        .doc(chatIdR)
+        .collection('chat')
+        .add(oneChatModel.toJson())
+        .catchError((ex) => TostMsg().displayTostMsg(msg: catchError + ex))
         .then((value) async {
-      final newVal = value.get(FieldPath(const [keyOnLine]));
-      OneChatModel oneChatModel = OneChatModel(msg: newMsg, readed: newVal);
+      MyChatsModel myChatsModel = MyChatsModel(
+        chatId: chatIdR,
+        receiverId: receiverIdR,
+        receiverName: reciverNameR,
+        lastMsg: newMsg,
+      );
 
       await firestore
-          .collection(messagesTable)
-          .doc(chatIdR)
-          .collection('chat')
-          .add(oneChatModel.toJson())
-          .catchError((ex) => TostMsg().displayTostMsg(msg: catchError + ex))
-          .then((value) async {
-        MyChatsModel myChatsModel = MyChatsModel(
-          chatId: chatIdR,
-          receiverId: receiverIdR,
-          receiverName: reciverNameR,
-          lastMsg: newMsg,
-        );
+          .collection(usersTable)
+          .doc(auth.currentUser?.uid)
+          .collection(subMyChatTable)
+          .doc(receiverIdR)
+          .set(myChatsModel.toJson())
+          .catchError((ex) => TostMsg().displayTostMsg(msg: catchError));
 
-        await firestore
-            .collection(usersTable)
-            .doc(auth.currentUser?.uid)
-            .collection(subMyChatTable)
-            .doc(receiverIdR)
-            .set(myChatsModel.toJson())
-            .catchError((ex) => TostMsg().displayTostMsg(msg: catchError));
-
-        await firestore
-            .collection(usersTable)
-            .doc(receiverIdR)
-            .collection(subMyChatTable)
-            .doc(auth.currentUser!.uid)
-            .set({
-          keyChatId: chatIdR,
-          keyReceiverId: auth.currentUser?.uid,
-          keyReceiverName: currentName ?? auth.currentUser?.displayName,
-          keyLastMsg: newMsg,
-          keyTime: DateTime.now()
-        });
-      }).catchError((ex) => TostMsg().displayTostMsg(msg: catchError));
-    }).catchError(
-            (ex) => TostMsg().displayTostMsg(msg: catchError + ex.toString()));
+      await firestore
+          .collection(usersTable)
+          .doc(receiverIdR)
+          .collection(subMyChatTable)
+          .doc(auth.currentUser!.uid)
+          .set({
+        keyChatId: chatIdR,
+        keyReceiverId: auth.currentUser?.uid,
+        keyReceiverName: currentName ?? auth.currentUser?.displayName,
+        keyLastMsg: newMsg,
+        keyTime: DateTime.now()
+      });
+    }).catchError((ex) => TostMsg().displayTostMsg(msg: catchError));
   }
 
   Future updateReadMsg(String chatId) async {
@@ -135,8 +126,14 @@ class OneChatController extends ChangeNotifier {
   String _formatDate(Timestamp userLastSeen) {
     String txt = '';
     final lastTime = userLastSeen.toDate();
-    txt =
-        '$usrLastSeen${lastTime.day}-${lastTime.month}-${lastTime.year.toString().substring(2)}';
+    final cDate = DateTime.now();
+    if (lastTime.day == cDate.day && lastTime.month == cDate.month) {
+      txt = '$usrLastSeen ${lastTime.hour}:${lastTime.minute}';
+    } else {
+      txt =
+          '$usrLastSeen${lastTime.day}-${lastTime.month}-${lastTime.year.toString().substring(2)}';
+    }
+
     return txt;
   }
 }

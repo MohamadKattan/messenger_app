@@ -13,7 +13,6 @@ Color btnColor = Colors.amberAccent;
 Color grey = const Color(0xffEDF2F6);
 Color green = const Color(0xff3CED78);
 
-
 // numeric val
 double mainSpacer = 20.0;
 int tabeslNumber = 4; // as dynamic Number Table from dataBase
@@ -25,6 +24,7 @@ List<MyChatsModel> checkMyChatsListId = [];
 String? currentName;
 String? currentIdUser;
 bool? userOnLone;
+bool? isOnLine;
 
 // all txt in app =>  No loclaztion
 const String appName = 'Messenger\nTest';
@@ -39,7 +39,7 @@ const String createNewAccount = 'Создать новый аккаунт';
 const String desCreateNewAccount =
     'введите свои данные, затем \nНажмите кнопку ниже, чтобы создать новую учетную запись';
 const String name = 'Введите ваше имя';
-const createBtn = 'Создавать';
+const createBtn = 'Создать';
 const alreadyHaveAnAccount = 'У вас уже есть аккаунт!?';
 const String titleHomeP = 'Чаты';
 const String txtSearchUser = 'Поиск';
@@ -48,7 +48,7 @@ const String noAnyChat =
 const String yesterday = 'Вчера';
 const String txtSignOut = 'Выход';
 const String writeNameSearch =
-    'Напишите адрес электронной почты пользователя\с которым вы хотите пообщаться';
+    'Напишите адрес электронной почты пользователя c кем вы хотите пообщаться';
 const String typeName = 'Введите электронную почту';
 const String usrOnline = 'В сети';
 const String usrLastSeen = 'визит';
@@ -88,7 +88,8 @@ const String errorName = 'ошибка, проверьте свое имя';
 const String errorMail = 'ошибка, проверьте свою электронную почту';
 const String errorPass = 'ошибка, проверьте свой пароль';
 const String errorWeakPassword = 'Предоставленный пароль слишком слабый.';
-const String erroremailInUse = 'Учетная запись для этого адреса электронной почты уже существует.';
+const String erroremailInUse =
+    'Учетная запись для этого адреса электронной почты уже существует.';
 const String catchError = 'Что-то пошло не так, попробуйте еще раз';
 const String errorNoUser = 'No user found for that email.';
 const String errorWrongPass = 'Wrong password provided for that user.';

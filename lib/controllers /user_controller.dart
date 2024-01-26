@@ -55,7 +55,10 @@ class UserController extends ChangeNotifier {
   Future updateUserStatus(bool status) async {
     String? id = auth.currentUser?.uid ?? 'null';
     if (id != 'null') {
-      firestore.collection(usersTable).doc(id).update({keyOnLine: status});
+      firestore
+          .collection(usersTable)
+          .doc(id)
+          .update({keyOnLine: status, keyLastSeen: DateTime.now()});
     } else {
       return;
     }
