@@ -3,14 +3,15 @@
 Messenger test  project build by  flutter .
 
 ## Getting Started
+ 
+THIS APP include 6 Screens use firebase as database for auth and store data
+USING MVC PATTREN
+NO ENCRYPT ANY DATA FOR NOW => TEST APP
+TIME WHILE BUILDING THIS APP 16 HOURS BY = Mohamad kattan
 
-This project is a starting point for a Flutter application.
+========================================================
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+ЭТО ПРИЛОЖЕНИЕ включает в себя 6 экранов, использующих Firebase в качестве базы данных для аутентификации и хранения данных.
+ИСПОЛЬЗОВАНИЕ MVC-ПАТТРЕНА
+НЕ ШИФРОВАТЬ ЛЮБЫЕ ДАННЫЕ НА СЕЙЧАС => ТЕСТИРОВАНИЕ ПРИЛОЖЕНИЯ
+ВРЕМЯ НА СОЗДАНИЕ ЭТОГО ПРИЛОЖЕНИЯ 16 ЧАСОВ = Мохамад Каттан
