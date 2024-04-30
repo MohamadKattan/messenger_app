@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
 import '../models/my_chats_model.dart';
@@ -7,6 +8,7 @@ import '../models/my_chats_model.dart';
 //app colors
 Color mainColor = const Color.fromARGB(255, 147, 238, 248);
 Color txtColorBlack = Colors.black;
+Color backgroundColor = const Color.fromARGB(255, 77, 71, 71);
 Color txtColorWhite = Colors.white;
 Color secondryGrey = const Color.fromARGB(255, 172, 182, 190);
 Color btnColor = Colors.amberAccent;
@@ -59,17 +61,21 @@ const String msgChat = 'Сообщение';
 // ========ref instance of db=========
 FirebaseAuth auth = FirebaseAuth.instance;
 FirebaseFirestore firestore = FirebaseFirestore.instance;
+   final database = FirebaseDatabase.instance;
+CollectionReference? callCollection;
 
 //======== table  name on db==========
 const String usersTable = 'users';
 const String subMyChatTable = 'my_chat';
 const String messagesTable = 'messages';
+const String callTable = 'call';
 
 //============key on db ==============
 const String keyUserId = 'user_id';
 const String keyUsername = 'user_name';
 const String keyUserMail = 'userMail';
 const String keyOnLine = 'on_line';
+const String keyCallStatus = "call_status";
 const String keyLastSeen = 'last_seen';
 const String keyUserToken = 'user_token';
 const String keyChatId = 'chat_id';
@@ -81,6 +87,11 @@ const String keyOwnerMsg = 'owner_msg';
 const String keyMsg = 'msg';
 const String keyTimeMsg = 'time_msg';
 const String keyReaded = 'readed_msg';
+const String keyCallerId = 'caller_id';
+const String keyCallerName = 'caller_name';
+const String keyVoiceCaller = 'voice_caller';
+const String keyVoiceReciver = 'voice_reciver';
+const String keyToAccept = 'to_accept';
 
 // error msg
 const String noNetMsg = 'Вы отключены от Интернета.';

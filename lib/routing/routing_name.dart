@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:messenger_test/views/call_screen.dart';
 import 'package:messenger_test/views/create_account.dart';
 import 'package:messenger_test/views/home_page.dart';
 import 'package:messenger_test/views/login_screen.dart';
@@ -11,6 +12,7 @@ const String rLogInScreen = '/logIn';
 const String rCreateAccount = '/create';
 const String rSearchUser = '/search';
 const String rchatWithone = '/chatOne';
+const String rCallScreen = "/callScreen";
 
 class AllRoute {
   static Map<String, Widget Function(BuildContext)> routeMap = {
@@ -20,5 +22,6 @@ class AllRoute {
     rCreateAccount: (context) => const CreateAccountScreen(),
     rSearchUser: (context) => const SearchUsersScreen(),
     // rchatWithone: (context) => const ChatOneScreen(receiverId: '',)
+     rCallScreen: (context) => const CallScreen()
   };
 }

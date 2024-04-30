@@ -11,57 +11,11 @@ import '../utils/constants.dart';
 class UserController extends ChangeNotifier {
   bool _isLouding = false;
   bool get isLouding => _isLouding;
+  String userId = auth.currentUser?.uid ?? 'null';
 
   void _louding(bool state) {
     _isLouding = state;
     notifyListeners();
-  }
-
-// check status
-  checkUserAuth(BuildContext context) async {
-    String userId = auth.currentUser?.uid ?? 'null';
-    if (userId != 'null') {
-      await getCurrentUser();
-      if (!context.mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, rHomePage, (route) => false);
-    } else {
-      Navigator.pushNamedAndRemoveUntil(
-          context, rLogInScreen, (route) => false);
-    }
-  }
-
-// get user data
-  Future getCurrentUser() async {
-    String id = auth.currentUser?.uid ?? 'null';
-    if (id != 'null') {
-      currentIdUser = id;
-      await firestore
-          .collection(usersTable)
-          .doc(id)
-          .get()
-          .then((DocumentSnapshot doc) {
-        if (doc.exists) {
-          Map<String, dynamic> map = doc.data() as Map<String, dynamic>;
-          currentName = map[keyUsername];
-          userOnLone = map[keyOnLine];
-        }
-      });
-    } else {
-      return;
-    }
-  }
-
-// update if user on/off
-  Future updateUserStatus(bool status) async {
-    String? id = auth.currentUser?.uid ?? 'null';
-    if (id != 'null') {
-      firestore
-          .collection(usersTable)
-          .doc(id)
-          .update({keyOnLine: status, keyLastSeen: DateTime.now()});
-    } else {
-      return;
-    }
   }
 
   // create new account
@@ -154,5 +108,50 @@ class UserController extends ChangeNotifier {
   Future logOut() async {
     await updateUserStatus(false);
     await FirebaseAuth.instance.signOut();
+  }
+
+// check status
+  checkUserAuth(BuildContext context) async {
+    if (userId != 'null') {
+      await getCurrentUser();
+      if (!context.mounted) return;
+      Navigator.pushNamedAndRemoveUntil(context, rHomePage, (route) => false);
+    } else {
+      Navigator.pushNamedAndRemoveUntil(
+          context, rLogInScreen, (route) => false);
+    }
+  }
+
+// get user data
+  Future getCurrentUser() async {
+    if (userId != 'null') {
+      currentIdUser = userId;
+      await firestore
+          .collection(usersTable)
+          .doc(userId)
+          .get()
+          .then((DocumentSnapshot doc) {
+        if (doc.exists) {
+          Map<String, dynamic> map = doc.data() as Map<String, dynamic>;
+          currentName = map[keyUsername];
+          userOnLone = map[keyOnLine];
+        }
+      });
+    } else {
+      return;
+    }
+  }
+
+// update if user on/off
+  Future updateUserStatus(bool status) async {
+    if (userId != 'null') {
+      firestore.collection(usersTable).doc(userId).update({
+        keyOnLine: status,
+        keyLastSeen: DateTime.now(),
+        // keyCallStatus: "waiting"
+      });
+    } else {
+      return;
+    }
   }
 }

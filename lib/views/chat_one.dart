@@ -7,9 +7,11 @@ import 'package:messenger_test/components%20/ctm_iconbtn.dart';
 import 'package:messenger_test/components%20/ctm_progress.dart';
 import 'package:messenger_test/components%20/ctm_txt.dart';
 import 'package:messenger_test/components%20/tost_msg.dart';
+import 'package:messenger_test/controllers%20/voice_call_controller.dart';
 import 'package:messenger_test/models/one_chat_model.dart';
 import 'package:messenger_test/utils/constants.dart';
 import 'package:flutter/foundation.dart' as foundation;
+import 'package:messenger_test/views/call_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers /one_chat_controller.dart';
@@ -18,12 +20,11 @@ class ChatOneScreen extends StatefulWidget {
   final String? receiverId;
   final String? receiverName;
   final String? chatId;
-  
+
   const ChatOneScreen(
       {super.key,
       required this.receiverId,
       required this.receiverName,
-
       required this.chatId});
 
   @override
@@ -56,6 +57,7 @@ class _ChatOneScreenState extends State<ChatOneScreen> {
 
   @override
   Widget build(BuildContext context) {
+    bool val = context.watch<OneChatController>().emojiShowing;
     return Builder(builder: (context) {
       return SafeArea(
         child: Scaffold(
@@ -64,7 +66,7 @@ class _ChatOneScreenState extends State<ChatOneScreen> {
             children: [
               _appBar(context),
               _listChat(),
-              _chatTxtPanel(),
+              _chatTxtPanel(val),
               _emojy()
             ],
           ),
@@ -80,41 +82,58 @@ class _ChatOneScreenState extends State<ChatOneScreen> {
       decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: secondryGrey, width: 1.0))),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          CustomIconBtn(
-            iconData: Icons.arrow_back_ios,
-            onClick: () => Navigator.pop(context),
-            btnSize: 24,
-            btnColor: txtColorBlack,
-          ),
-          CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.blue,
-              child: CustomTxt(widget.receiverName![0].toUpperCase())),
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CustomTxt(
-                  widget.receiverName ?? 'null',
-                  color: txtColorBlack,
-                  fSzie: 18,
-                  fontWeight: FontWeight.bold,
+          Row(
+            children: [
+              CustomIconBtn(
+                iconData: Icons.arrow_back_ios,
+                onClick: () => Navigator.pop(context),
+                btnSize: 24,
+                btnColor: txtColorBlack,
+              ),
+              CircleAvatar(
+                  radius: 25,
+                  backgroundColor: Colors.blue,
+                  child:
+                      CustomTxt(widget.receiverName?[0] ?? ''.toUpperCase())),
+              Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomTxt(
+                      widget.receiverName ?? 'null',
+                      color: txtColorBlack,
+                      fSzie: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    OneChatController().listeningToReceiverStatus(
+                        id: widget.receiverId ?? 'null')
+                  ],
                 ),
-                OneChatController()
-                    .listeningToReceiverStatus(id: widget.receiverId ?? 'null')
-              ],
-            ),
+              ),
+            ],
           ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconButton(
+                  onPressed: () => _pushToCallScreen(context),
+                  icon: const Icon(Icons.call, size: 30)),
+              IconButton(
+                  onPressed: () => TostMsg()
+                      .displayTostMsg(msg: "هذه الخدمة غير متوفرة حاليا"),
+                  icon: const Icon(Icons.video_call_sharp, size: 30))
+            ],
+          )
         ],
       ),
     );
   }
 
-  _chatTxtPanel() {
+  _chatTxtPanel(bool val) {
     return Container(
-      // height: MediaQuery.of(context).size.height * 12 / 100,
       padding: EdgeInsets.all(mainPadding),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -128,7 +147,7 @@ class _ChatOneScreenState extends State<ChatOneScreen> {
               child: CustomIconBtn(
                 iconData: Icons.attach_file,
                 onClick: () {
-                  _toggel();
+                  _toggel(val);
                 },
                 btnSize: 30,
                 btnColor: txtColorBlack,
@@ -167,11 +186,11 @@ class _ChatOneScreenState extends State<ChatOneScreen> {
                     _controller.clear();
                   }
 
-                  bool val =
-                      Provider.of<OneChatController>(context, listen: false)
-                          .emojiShowing;
+                  // bool val =
+                  //     Provider.of<OneChatController>(context, listen: false)
+                  //         .emojiShowing;
                   if (val) {
-                    _toggel();
+                    _toggel(val);
                   }
                 },
                 btnSize: 30,
@@ -193,44 +212,43 @@ class _ChatOneScreenState extends State<ChatOneScreen> {
             textEditingController: _controller,
             onBackspacePressed: _onBackspacePressed,
             config: Config(
-              columns: 7,
-              emojiSizeMax: 32 *
-                  (foundation.defaultTargetPlatform == TargetPlatform.iOS
-                      ? 1.30
-                      : 1.0),
-              verticalSpacing: 0,
-              horizontalSpacing: 0,
-              gridPadding: EdgeInsets.zero,
-              initCategory: Category.RECENT,
-              bgColor: const Color(0xFFF2F2F2),
-              indicatorColor: Colors.blue,
-              iconColor: Colors.grey,
-              iconColorSelected: Colors.blue,
-              backspaceColor: Colors.blue,
-              skinToneDialogBgColor: Colors.white,
-              skinToneIndicatorColor: Colors.grey,
-              enableSkinTones: true,
-              recentTabBehavior: RecentTabBehavior.RECENT,
-              recentsLimit: 28,
-              replaceEmojiOnLimitExceed: false,
-              noRecents: const Text(
-                'No Recents',
-                style: TextStyle(fontSize: 20, color: Colors.black26),
-                textAlign: TextAlign.center,
+              emojiViewConfig: EmojiViewConfig(
+                columns: 7,
+                emojiSizeMax: 32 *
+                    (foundation.defaultTargetPlatform == TargetPlatform.iOS
+                        ? 1.30
+                        : 1.0),
+                verticalSpacing: 0,
+                horizontalSpacing: 0,
+                gridPadding: EdgeInsets.zero,
+                recentsLimit: 28,
+                replaceEmojiOnLimitExceed: false,
+                noRecents: const Text(
+                  'No Recents',
+                  style: TextStyle(fontSize: 20, color: Colors.black26),
+                  textAlign: TextAlign.center,
+                ),
+                loadingIndicator: const SizedBox.shrink(),
+                buttonMode: ButtonMode.MATERIAL,
               ),
-              loadingIndicator: const SizedBox.shrink(),
-              tabIndicatorAnimDuration: kTabScrollDuration,
-              categoryIcons: const CategoryIcons(),
-              buttonMode: ButtonMode.MATERIAL,
+              categoryViewConfig: const CategoryViewConfig(
+                  initCategory: Category.RECENT,
+                  backgroundColor: Color(0xFFF2F2F2),
+                  indicatorColor: Colors.blue,
+                  iconColor: Colors.grey,
+                  iconColorSelected: Colors.blue,
+                  backspaceColor: Colors.blue,
+                  recentTabBehavior: RecentTabBehavior.RECENT,
+                  categoryIcons: CategoryIcons()),
               checkPlatformCompatibility: true,
             ),
           )),
     );
   }
 
-  void _toggel() {
-    bool val =
-        Provider.of<OneChatController>(context, listen: false).emojiShowing;
+  _toggel(bool val) {
+    // bool val =
+    //     Provider.of<OneChatController>(context, listen: false).emojiShowing;
     if (val) {
       context.read<OneChatController>().toggelEmoji(false);
     } else {
@@ -328,5 +346,37 @@ class _ChatOneScreenState extends State<ChatOneScreen> {
         ),
       ],
     );
+  }
+
+  _pushToCallScreen(BuildContext context) async {
+    await firestore
+        .collection(usersTable)
+        .doc(widget.receiverId ?? "null")
+        .get()
+        .then((value) async {
+      if (value.exists && value.data() != null) {
+        String checkStatus = value.data()?["call_status"];
+        if (checkStatus != "waiting") {
+          TostMsg().displayTostMsg(
+              msg: 'لدى المستخدم مكالمة أخرى', color: Colors.orange);
+          return;
+        } else {
+          if (!context.mounted) return;
+          if (widget.receiverId != null) {
+            await context
+                .read<CallVoiceController>()
+                .listingToCallStatusOfReciver(widget.receiverId!,
+                    context, widget.chatId, widget.receiverName);
+          }
+
+          if (!context.mounted) return;
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) =>
+                      CallScreen(receiverName: widget.receiverName)));
+        }
+      }
+    });
   }
 }

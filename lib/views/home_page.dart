@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:messenger_test/components%20/ctm_txt.dart';
+import 'package:messenger_test/controllers%20/voice_call_controller.dart';
+import 'package:provider/provider.dart';
 
 import '../components /ctm_appbar.dart';
 import '../components /ctm_drawer.dart';
@@ -9,24 +12,26 @@ import '../routing/routing_name.dart';
 import '../utils/constants.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
-  // this method for check if app in backGround or else for do some functions
+  FlutterSoundRecorder? mRecorder = FlutterSoundRecorder();
   @override
   Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
     super.didChangeAppLifecycleState(state);
     switch (state) {
       case AppLifecycleState.detached:
         UserController().updateUserStatus(false);
+        context.read<CallVoiceController>().rest();
         userOnLone = false;
         break;
       case AppLifecycleState.paused:
         UserController().updateUserStatus(false);
+        context.read<CallVoiceController>().rest();
         userOnLone = false;
 
         break;
@@ -37,6 +42,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         break;
       case AppLifecycleState.inactive:
         UserController().updateUserStatus(false);
+        context.read<CallVoiceController>().rest();
         userOnLone = false;
         break;
       case AppLifecycleState.hidden:
@@ -47,6 +53,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     WidgetsBinding.instance.addObserver(this);
     UserController().updateUserStatus(true);
+    context.read<CallVoiceController>().notifyNewCall(context);
     super.initState();
   }
 
@@ -62,8 +69,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return Builder(
       builder: (context) {
         return SafeArea(
-          child: WillPopScope(
-            onWillPop: () async => false,
+          child: PopScope(
+            canPop: false,
             child: Scaffold(
               appBar: CustomAppBar(
                   context: context,

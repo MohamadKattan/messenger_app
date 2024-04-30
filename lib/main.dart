@@ -5,10 +5,9 @@ import 'package:provider/provider.dart';
 import 'controllers /one_chat_controller.dart';
 import 'controllers /search_users.dart';
 import 'controllers /user_controller.dart';
+import 'controllers /voice_call_controller.dart';
 import 'firebase_options.dart';
 import 'routing/routing_name.dart';
-
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +20,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => UserController()),
         ChangeNotifierProvider(create: (_) => SearchUsersController()),
         ChangeNotifierProvider(create: (_) => OneChatController()),
+        ChangeNotifierProvider(create: (_) => CallVoiceController())
       ],
       child: const MyApp(),
     ),
@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Messenger Test',
+        title: 'Messenger kattan',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
@@ -43,3 +43,16 @@ class MyApp extends StatelessWidget {
         routes: AllRoute.routeMap);
   }
 }
+
+
+// gem update --system
+// sudo gem install cocoapods --user-install
+
+//sudo gem install cocoapods
+//pod cache clean --all
+// rm -rf Pods
+// rm Podfile.lock
+// pod update or pod install
+
+
+
