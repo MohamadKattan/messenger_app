@@ -2,11 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-// import 'package:audioplayers/audioplayers.dart' as audiopp;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:messenger_test/controllers%20/one_chat_controller.dart';
 import 'package:messenger_test/models/call_model.dart';
 import 'package:messenger_test/routing/routing_name.dart';
@@ -14,20 +12,27 @@ import 'package:messenger_test/utils/constants.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:path_provider/path_provider.dart' as path;
+
+// typedef _Fn = void Function();
 
 class CallVoiceController extends ChangeNotifier {
-  AudioPlayer audioPlayer = AudioPlayer();
-
-  FlutterSoundRecorder? mRecorder = FlutterSoundRecorder();
-  final FlutterSoundPlayer mPlayer = FlutterSoundPlayer();
+  FlutterSoundPlayer? mPlayer;
+  FlutterSoundRecorder? mRecorder;
+  List<Uint8List> audioBufferList = [];
+  bool isPlaying = false;
   bool mPlayerIsInited = false;
+  bool mRecorderIsInited = false;
+  bool mEnableVoiceProcessing = false;
+
+  bool mplaybackReady = false;
+  String? _mPath;
+  StreamSubscription? _mRecordingDataSubscription;
   double mSpeed = 100.0;
   int tSampleRate = 44000;
   int tBlockSize = 4096;
-  bool mEnableVoiceProcessing = false;
-  StreamSubscription? _mRecordingDataSubscription;
+  IOSink? sink;
+  int newCount = 0;
 
   String userId = auth.currentUser?.uid ?? "null";
   String? receiverIdStream;
@@ -91,7 +96,6 @@ class CallVoiceController extends ChangeNotifier {
     };
     try {
       await database.ref(callTable).child(reciverId).set(data);
-      // await firestore.collection(callTable).doc(reciverId).set(data);
     } catch (e) {
       debugPrint(e.toString());
       rethrow;
@@ -102,7 +106,6 @@ class CallVoiceController extends ChangeNotifier {
     if (id != 'null') {
       try {
         database.ref(callTable).child(id).remove();
-        // await firestore.collection(callTable).doc(userId).delete();
       } catch (e) {
         debugPrint('_deleteDataOfCallTable :: $e');
         rethrow;
@@ -155,7 +158,7 @@ class CallVoiceController extends ChangeNotifier {
     _listingLoudingStatus(true);
   }
 
-  void listingToSpeaker() {
+  Future<void> listingToSpeaker() async {
     _speaker = !_speaker;
     _listingLoudingStatus(true);
   }
@@ -184,8 +187,7 @@ class CallVoiceController extends ChangeNotifier {
             _isAccpted = false;
             _listingToTimeOfCall();
             _listingLoudingStatus(true);
-            await recordVoiceCall(mRecorder);
-            startAudioStreaming(userId);
+            await recordVoiceCall();
           } else {
             _callStatusOfReciver = 'call time out';
             _isAccpted = false;
@@ -200,6 +202,8 @@ class CallVoiceController extends ChangeNotifier {
   }
 
   Future<void> listingToEndingCall() async {
+    await stopAudioRecording();
+    await stopAudioPlayer();
     if (newtimer != null) {
       newtimer!.cancel();
     }
@@ -218,9 +222,6 @@ class CallVoiceController extends ChangeNotifier {
         await _deleteDataOfCallTable(receiverIdStream!);
       }
       rest();
-      stopAudioRecording();
-      stopAudioStreaming();
-      _listingLoudingStatus(true);
     }
   }
 
@@ -281,8 +282,8 @@ class CallVoiceController extends ChangeNotifier {
             _callStatusOfReciver = checkStatus;
             _listingToTimeOfCall();
             _listingLoudingStatus(true);
-            await recordVoiceCall(mRecorder);
-            startAudioStreaming(receiverId);
+            await recordVoiceCall();
+            startAudioPlayer(receiverId);
             break;
           case "ended":
             callStatusReciverStream?.cancel();
@@ -295,7 +296,7 @@ class CallVoiceController extends ChangeNotifier {
             _iAmCalling = !_iAmCalling;
             await _updateCallStatusOnUserTable(userId, "waiting");
             await stopAudioRecording();
-            stopAudioStreaming();
+            await stopAudioPlayer();
             break;
           default:
             _callStatusOfReciver = null;
@@ -345,14 +346,12 @@ class CallVoiceController extends ChangeNotifier {
   }
 
   Future<void> openTheRecorder() async {
+    mRecorder = FlutterSoundRecorder();
     var status = await Permission.microphone.request();
     if (status != PermissionStatus.granted) {
       throw RecordingPermissionException('Microphone permission not granted');
     }
-
-    await mRecorder?.openRecorder();
-    await mPlayer.openPlayer();
-
+    if (mRecorder != null) await mRecorder!.openRecorder();
     final session = await AudioSession.instance;
     await session.configure(AudioSessionConfiguration(
       avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
@@ -371,47 +370,15 @@ class CallVoiceController extends ChangeNotifier {
       androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
       androidWillPauseWhenDucked: true,
     ));
+    mRecorderIsInited = true;
   }
 
-  Future<void> recordVoiceCall(FlutterSoundRecorder? recorder) async {
-    StreamController<Food> recordingDataController = StreamController<Food>();
-    _mRecordingDataSubscription =
-        recordingDataController.stream.listen((buffer) async {
-      if (buffer is FoodData) {
-        if (buffer.data != null) {
-          await uploadAudioChunkToFirestore(buffer.data);
-        }
-      }
-    });
-    await mRecorder?.startRecorder(
-        toStream: recordingDataController.sink,
-        codec: Codec.pcm16,
-        numChannels: 1,
-        sampleRate: tSampleRate,
-        enableVoiceProcessing: mEnableVoiceProcessing);
-  }
-
-  Future<void> uploadAudioChunkToFirestore(Uint8List? data) async {
-    _mRecordingDataSubscription?.pause();
-
-    await Future.delayed(const Duration(seconds: 1));
-    String base64Data = data != null ? base64Encode(data) : '';
-
-    try {
-      if (receiverIdStream != null) {
-        await database
-            .ref(callTable)
-            .child(receiverIdStream!)
-            .update({keyVoiceCaller: base64Data});
-      } else {
-        await database
-            .ref(callTable)
-            .child(userId)
-            .update({keyVoiceReciver: base64Data});
-      }
-      _mRecordingDataSubscription?.resume();
-    } catch (e) {
-      debugPrint('error uploadAudioChunkToFirestore ::: $e');
+  Future<void> openThePlayer() async {
+    mPlayer = FlutterSoundPlayer();
+    if (mPlayer != null) {
+      await mPlayer!.openPlayer().then((value) {
+        mPlayerIsInited = true;
+      });
     }
   }
 
@@ -422,66 +389,111 @@ class CallVoiceController extends ChangeNotifier {
     }
 
     if (mRecorder != null) {
-      await mRecorder?.stopRecorder();
-      // _mRecorder?.closeRecorder();
-      // _mRecorder = null;
+      await mRecorder!.stopRecorder();
+      mRecorder!.closeRecorder();
+      mRecorder = null;
+    }
+    mplaybackReady = true;
+  }
+
+  Future<void> stopAudioPlayer() async {
+    if (mPlayer != null) {
+      await mPlayer!.stopPlayer();
+      mPlayer!.closePlayer();
+      mPlayer = null;
     }
   }
 
-  void feedHim(Uint8List data) {
-    var start = 0;
-    var totalLength = data.length;
-    while (totalLength > 0 && !mPlayer.isStopped) {
-      var ln = totalLength > tBlockSize ? tBlockSize : totalLength;
-      mPlayer.foodSink!.add(FoodData(data.sublist(start, start + ln)));
-      totalLength -= ln;
-      start += ln;
+  Future<void> recordVoiceCall() async {
+    // assert(_mRecorderIsInited && mPlayer!.isStopped);
+    var recordingDataController = StreamController<Food>();
+    recordingDataController.stream.listen((buffer) async {
+      if (buffer is FoodData) {
+        String convertTobase64 = base64Encode(buffer.data!);
+        await uploadAudioChunkToFirestore(convertTobase64);
+      }
+    });
+    await mRecorder!.startRecorder(
+      toStream: recordingDataController.sink,
+      codec: Codec.pcm16,
+      numChannels: 1,
+      sampleRate: tSampleRate,
+      enableVoiceProcessing: mEnableVoiceProcessing,
+      bufferSize: 20480,
+    );
+  }
+
+  Future<void> uploadAudioChunkToFirestore(String data) async {
+    try {
+      if (receiverIdStream != null) {
+        await database
+            .ref(callTable)
+            .child(receiverIdStream!)
+            .update({keyVoiceCaller: data});
+      } else {
+        await database
+            .ref(callTable)
+            .child(userId)
+            .update({keyVoiceReciver: data});
+      }
+    } catch (e) {
+      debugPrint('error uploadAudioChunkToFirestore ::: $e');
     }
   }
 
-  void startAudioStreaming(String id) {
-    String? audio;
-    database.ref(callTable).child(id).onValue.listen((data) async {
+  Future<void> startAudioPlayer(String id) async {
+    sink = await createFile();
+    String listingVoice = _iAmCalling ? 'voice_caller' : 'voice_caller';
+    database
+        .ref(callTable)
+        .child(id)
+        .child(listingVoice)
+        .onValue
+        .listen((data) async {
       if (data.snapshot.exists && data.snapshot.value != null) {
-        Map<Object?, Object?> newSnap =
-            data.snapshot.value as Map<Object?, Object?>;
-        Map<String, dynamic> res = newSnap.map((key, value) {
-          return MapEntry(key.toString(), value);
-        });
-        _callModel = CallModel.fromMap(res);
+        String audio = data.snapshot.value.toString();
+        Uint8List audioData = base64Decode(audio);
+        sink!.add(audioData);
+      }
+    }).onError((e) {
+      debugPrint('error listing to data :: $e');
+    });
 
-        audio = iAmCalling
-            ? _callModel?.voiceReciver ?? ''
-            : _callModel?.voiceReciver ?? '';
-        if (audio == null) return;
-        Uint8List audioData = base64Decode(audio!);
-        // final tempDir = await getTemporaryDirectory();
-        // final tempFile = File('${tempDir.path}/temp_audio.pcm');
-        // await tempFile.writeAsBytes(audioData);
-        // await audioPlayer.setFilePath(tempFile.path);
-        // audioPlayer.play();
-        await mPlayer.startPlayerFromStream(
-          codec: Codec.pcm16,
-          numChannels: 1,
-          sampleRate: tSampleRate,
-          bufferSize: 100000,
-        );
-        _listingLoudingStatus(true);
-        var dataSound = audioData;
-        feedHim(dataSound);
-           //if (_mPlayer != null) {
-      // We must not do stopPlayer() directely //await stopPlayer();
-      mPlayer.foodSink!.add(FoodEvent(() async {
-       
-      }));
-    //}
+  Timer.periodic(const Duration(seconds: 1), (timer) async {
+      newCount++;
+      if (newCount == 5) {
+        mRecorder!.pauseRecorder();
+        await play();
       }
     });
   }
 
-  void stopAudioStreaming() {
-    audioPlayer.stop();
-    audioPlayer.dispose();
+  Future<IOSink> createFile() async {
+    var tempDir = await path.getTemporaryDirectory();
+    _mPath = '${tempDir.path}/flutter_sound_example.pcm';
+    var outputFile = File(_mPath!);
+    if (outputFile.existsSync()) {
+      await outputFile.delete();
+    }
+    return outputFile.openWrite();
+  }
+
+
+  Future<void> play() async {
+    // assert(_mPlayerIsInited &&
+    //     _mplaybackReady &&
+    //     mRecorder!.isStopped &&
+    //     mPlayer!.isStopped);
+    await mPlayer!.startPlayer(
+        fromURI: _mPath,
+        sampleRate: tSampleRate,
+        codec: Codec.pcm16,
+        numChannels: 1,
+        whenFinished: () async {
+          mRecorder!.resumeRecorder();
+          sink = await createFile();
+          newCount = 0;
+        });
   }
 
   Future<void> rest() async {
@@ -495,9 +507,8 @@ class CallVoiceController extends ChangeNotifier {
     _minTimeOfCALL = 0;
     _houerTimeOfCALL = 0;
     count = 40;
-    // await _mRecorder?.stopRecorder();
-    // await _mRecordingDataSubscription?.cancel();
     await _updateCallStatusOnUserTable(userId, "waiting");
     await _deleteDataOfCallTable(userId);
   }
 }
+

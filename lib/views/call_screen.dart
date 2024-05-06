@@ -19,12 +19,8 @@ class _CallScreenState extends State<CallScreen> {
   @override
   void initState() {
     super.initState();
+    context.read<CallVoiceController>().openThePlayer();
     context.read<CallVoiceController>().openTheRecorder();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   @override

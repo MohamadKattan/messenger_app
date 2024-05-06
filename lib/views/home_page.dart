@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:messenger_test/components%20/ctm_txt.dart';
 import 'package:messenger_test/controllers%20/voice_call_controller.dart';
+import 'package:messenger_test/views/voice_call.dart';
 import 'package:provider/provider.dart';
 
 import '../components /ctm_appbar.dart';
@@ -72,6 +73,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           child: PopScope(
             canPop: false,
             child: Scaffold(
+              floatingActionButton: FloatingActionButton(onPressed:()=> Navigator.push(context, MaterialPageRoute(builder: (_)=>const RecordToStreamExample()))),
               appBar: CustomAppBar(
                   context: context,
                   txtTitle: '',
